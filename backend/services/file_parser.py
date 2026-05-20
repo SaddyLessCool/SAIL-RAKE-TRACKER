@@ -101,39 +101,35 @@ def parse_files(file_bytes_list: list) -> tuple:
         filenames.append(filename)
 
     # ── REPORT TIME resolution ────────────────────────────────────────────────
-    has_rt = [_has_report_time(df) for df in dfs]
+    resolved_times = []
+    for df in dfs:
+        if _has_report_time(df):
+            resolved_times.append(_get_report_time_value(df))
+        else:
+            resolved_times.append(None)
 
-    if all(has_rt):
-        # CASE 1: All files have REPORT TIME — they must match
-        times = [_get_report_time_value(df) for df in dfs]
-        # Compare by truncating to the minute (ignore second-level rounding)
-        base = times[0]
-        for i, t in enumerate(times[1:], start=1):
-            if t is None:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"File '{filenames[i]}' has a null REPORT TIME value despite non-null entries."
-                )
-            diff = abs((base - t).total_seconds())
-            if diff > 60:  # allow up to 1-minute drift
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        f"REPORT TIME mismatch between files. "
-                        f"Expected {format_ist(base)} but '{filenames[i]}' has {format_ist(t)}. "
-                        f"All uploaded files must share the same REPORT TIME."
+    active_times = [t for t in resolved_times if t is not None]
+
+    if active_times:
+        # All files containing a REPORT TIME must match (within 1-minute drift)
+        base = active_times[0]
+        for i, t in enumerate(resolved_times):
+            if t is not None:
+                diff = abs((base - t).total_seconds())
+                if diff > 60:  # allow up to 1-minute drift
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            f"REPORT TIME mismatch between files. "
+                            f"Expected {format_ist(base)} but '{filenames[i]}' has {format_ist(t)}. "
+                            f"All uploaded files must share the same REPORT TIME."
+                        )
                     )
-                )
         resolved_report_time = base
-
-    elif any(has_rt):
-        # CASE 2: Only some files have REPORT TIME — copy to those that don't
-        source_time = next(t for t, h in zip(
-            [_get_report_time_value(df) for df in dfs], has_rt) if h)
-        resolved_report_time = source_time
-        for i, (df, has) in enumerate(zip(dfs, has_rt)):
-            if not has:
-                dfs[i]["REPORT TIME"] = source_time
+        # Copy to those files that are missing it
+        for i, t in enumerate(resolved_times):
+            if t is None:
+                dfs[i]["REPORT TIME"] = base
 
     else:
         # CASE 3: No file has REPORT TIME — use MAX(STTS TIME)
