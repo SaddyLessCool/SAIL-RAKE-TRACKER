@@ -176,9 +176,4 @@ export const api = {
     if (!res.ok) throw new Error(`Upload ${res.status}: ${await res.text()}`);
     return res.json();
   },
-  chat: (message: string) => req<{ response: string }>("/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
-  }).then(r => r.response),
 };

@@ -6,7 +6,7 @@ SAIL Rake Tracker — FastAPI app entry point.
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import upload, snapshot, comparison, events, daily_summary, range_summary, chat
+from routers import upload, snapshot, comparison, events, daily_summary, range_summary
 from core.auth import verify_auth_token
 
 app = FastAPI(
@@ -40,7 +40,6 @@ app.include_router(comparison.router, tags=["Comparison"])
 app.include_router(events.router, tags=["Events"])
 app.include_router(daily_summary.router, tags=["Summaries"])
 app.include_router(range_summary.router, tags=["Summaries"])
-app.include_router(chat.router, tags=["Chat"])
 
 
 @app.get("/", tags=["Health"])
