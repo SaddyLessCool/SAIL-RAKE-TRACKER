@@ -20,11 +20,16 @@ export function setApiBase(url: string) {
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const base = getApiBase();
+  const token = import.meta.env.VITE_API_SECRET_TOKEN || "sail_secure_token_2026";
   let res: Response;
   try {
     res = await fetch(`${base}${path}`, {
       ...init,
-      headers: { Accept: "application/json", ...(init?.headers || {}) },
+      headers: { 
+        Accept: "application/json", 
+        Authorization: `Bearer ${token}`,
+        ...(init?.headers || {}) 
+      },
     });
   } catch (e: any) {
     throw new Error(
@@ -101,6 +106,12 @@ export type DailySummary = {
     locn?: string;
     duration_hours?: number;
   }>;
+  idle_count?: number;
+  idle_rakes?: Array<{
+    rake_name: string;
+    locn?: string;
+    duration_hours?: number;
+  }>;
   [k: string]: any;
 };
 
@@ -109,7 +120,7 @@ export type RangeSummary = {
   end_date?: string;
   total_rakes?: number;
   total_duration_hours?: number;
-  location_summary?: Array<{ locn: string; total_hours: number; count?: number }>;
+  location_summary?: Array<{ locn: string; count?: number; rakes?: string[] }>;
   idle_over_3hrs?: Array<{ rake_name: string; locn?: string; duration_hours: number }>;
   [k: string]: any;
 };
@@ -131,7 +142,7 @@ export const api = {
   compare: (id: string) => req<CompareResult>(`/compare?snapshot_id=${id}`),
   daily: () => req<DailySummary>("/daily-summary"),
   range: (params?: {
-    range_type?: "7d" | "15d" | "1m" | "6m";
+    range_type?: "7d" | "15d" | "1m";
     start?: string;
     end?: string;
   }) => {
@@ -152,10 +163,22 @@ export const api = {
   },
   upload: async (files: File[]) => {
     const base = getApiBase();
+    const token = import.meta.env.VITE_API_SECRET_TOKEN || "sail_secure_token_2026";
     const fd = new FormData();
     files.forEach((f) => fd.append("files", f));
-    const res = await fetch(`${base}/upload`, { method: "POST", body: fd });
+    const res = await fetch(`${base}/upload`, { 
+      method: "POST", 
+      body: fd,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
     if (!res.ok) throw new Error(`Upload ${res.status}: ${await res.text()}`);
     return res.json();
   },
+  chat: (message: string) => req<{ response: string }>("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  }).then(r => r.response),
 };

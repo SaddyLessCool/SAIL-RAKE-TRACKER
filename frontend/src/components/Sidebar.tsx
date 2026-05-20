@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -8,6 +9,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSnapshots } from "./snapshot-provider";
+import { toast } from "sonner";
+import { useTheme } from "./theme-provider";
 
 const items = [
   { to: "/", label: "Upload", icon: LayoutDashboard },
@@ -19,12 +22,29 @@ const items = [
 export function Sidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { snapshots, selectedId, setSelectedId } = useSnapshots();
+  const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
 
   return (
-    <aside className="hidden md:flex sticky top-4 h-[calc(100vh-2rem)] ml-4 w-48 shrink-0 flex-col rounded-2xl bg-sidebar text-sidebar-foreground shadow-lg-soft overflow-hidden">
+    <>
+      {/* Invisible Hover Trigger Zone */}
+      <div 
+        className="fixed left-0 top-0 bottom-0 w-8 z-40"
+        onMouseEnter={() => setIsHovered(true)}
+      />
+
+      {/* Slide-out Sidebar */}
+      <aside 
+        className={cn(
+          "fixed top-4 h-[calc(100vh-2rem)] w-48 flex-col rounded-2xl bg-sidebar text-sidebar-foreground shadow-2xl overflow-hidden z-50 transition-transform duration-300 ease-in-out",
+          isHovered ? "translate-x-4" : "-translate-x-[110%]"
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
       <div className="flex items-center gap-2 px-5 py-5 border-b border-sidebar-border">
         <div className="flex h-10 w-10 items-center justify-center">
-          <img src="/sail_logo.png" alt="SAIL Logo" className="h-full w-full object-contain" />
+          <img src={theme === "dark" ? "/sail_logo_white.png" : "/sail_logo.png"} alt="SAIL Logo" className="h-full w-full object-contain" />
         </div>
         <div>
           <p className="text-sm font-semibold leading-tight">SAIL</p>
@@ -68,7 +88,15 @@ export function Sidebar() {
           return (
             <button
               key={s.id}
-              onClick={() => setSelectedId(s.id)}
+              onClick={() => {
+                if (s.id !== selectedId) {
+                  setSelectedId(s.id);
+                  toast.success(`Switched snapshot`, {
+                    description: `Report time: ${s.report_time}`,
+                    duration: 2500,
+                  });
+                }
+              }}
               className={cn(
                 "w-full text-left rounded-lg px-3 py-2 text-xs transition-all",
                 active
@@ -86,5 +114,6 @@ export function Sidebar() {
         })}
       </div>
     </aside>
+    </>
   );
 }

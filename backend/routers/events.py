@@ -23,8 +23,11 @@ def get_events(
     rake_name: Optional[str] = Query(None, description="Filter by rake name"),
     status: Optional[str] = Query(None, description="Filter by status: OPEN or CLOSED"),
     locn: Optional[str] = Query(None, description="Filter by location"),
+    page: int = 1,
+    limit: int = 30,
 ):
     supabase = get_supabase()
+    offset = (page - 1) * limit
 
     query = supabase.table("events").select("*").order("created_at", desc=True)
 
@@ -35,7 +38,7 @@ def get_events(
     if locn:
         query = query.eq("locn", locn)
 
-    result = query.execute()
+    result = query.range(offset, offset + limit - 1).execute()
     events = result.data or []
     
     for ev in events:

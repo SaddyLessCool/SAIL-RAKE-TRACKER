@@ -116,10 +116,10 @@ def get_range_summary(range_type: str = None, start: str = None, end: str = None
     for loc, dur in location_summary.items():
         location_summary_list.append({
             "locn": loc,
-            "total_hours": round(dur, 4),
-            "count": len(location_rakes.get(loc, set()))
+            "count": len(location_rakes.get(loc, set())),
+            "rakes": sorted(list(location_rakes.get(loc, set())))
         })
-    location_summary_list.sort(key=lambda x: x["total_hours"], reverse=True)
+    location_summary_list.sort(key=lambda x: x["count"], reverse=True)
 
     return {
         "start_date": range_start.strftime("%d-%m-%Y"),

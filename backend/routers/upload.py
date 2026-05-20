@@ -57,10 +57,16 @@ async def upload_files(files: List[UploadFile] = File(...)):
     for f in files:
         validate_xlsx_file(f)
 
-    # Read raw bytes
+    # Read raw bytes with size limit (Max 10MB)
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
     file_bytes_list = []
     for f in files:
         raw = await f.read()
+        if len(raw) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File '{f.filename}' exceeds maximum allowed size of 10MB."
+            )
         file_bytes_list.append((f.filename, raw))
 
     # STEP 1-2: Parse xlsx + REPORT TIME resolution

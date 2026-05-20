@@ -33,7 +33,6 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -65,7 +64,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Industrial dashboard for SAIL rake tracking and analytics.",
       },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/sail_logo_white.png" }
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -95,7 +97,7 @@ function RootComponent() {
         <SnapshotProvider>
           <div className="min-h-screen flex w-full bg-background">
             <Sidebar />
-            <div className="flex-1 min-w-0 flex flex-col pt-4">
+            <div className="flex-1 min-w-0 flex flex-col pt-4 transition-all duration-300">
               <Topbar />
               <main className="flex-1 px-4 pb-8 animate-fade-in-up">
                 <Outlet />

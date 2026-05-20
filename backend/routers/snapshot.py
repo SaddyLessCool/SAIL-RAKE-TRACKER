@@ -14,12 +14,14 @@ router = APIRouter()
 
 
 @router.get("/snapshots")
-def list_snapshots():
+def list_snapshots(page: int = 1, limit: int = 15):
     supabase = get_supabase()
+    offset = (page - 1) * limit
     result = (
         supabase.table("snapshots")
         .select("id, report_time, file_names, created_at")
         .order("created_at", desc=True)
+        .range(offset, offset + limit - 1)
         .execute()
     )
     data = result.data or []

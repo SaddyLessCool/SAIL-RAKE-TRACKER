@@ -18,6 +18,7 @@ export function KpiCard({
   color = "info",
   items,
   emptyText = "No rakes",
+  onClick,
 }: {
   title: string;
   value: number | string;
@@ -25,9 +26,22 @@ export function KpiCard({
   color?: Tone;
   items?: Array<{ primary: string; secondary?: string }>;
   emptyText?: string;
+  onClick?: () => void;
 }) {
+  const kpiColor = tone[color];
+
   return (
-    <div className="md-card p-3 pt-4 animate-fade-in-up relative flex flex-col h-full min-w-0 mt-4">
+    <div 
+      className={cn(
+        "md-card p-3 pt-4 animate-fade-in-up relative flex flex-col h-full min-w-0 mt-4",
+        onClick && "cursor-pointer interactive-kpi-card hover:bg-muted/30 transition-all duration-300"
+      )}
+      onClick={onClick}
+      style={{
+        "--kpi-color": kpiColor,
+        "--kpi-glow-color": `color-mix(in srgb, ${kpiColor} 45%, transparent)`
+      } as React.CSSProperties}
+    >
       <div className="flex items-center justify-between mb-3">
         <div
           className="absolute -top-4 left-4 h-10 w-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-transform hover:scale-110"

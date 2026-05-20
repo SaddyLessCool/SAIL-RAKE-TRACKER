@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ArrowRightLeft, LogIn, LogOut } from "lucide-react";
 import { api } from "@/lib/api";
 import { useSnapshots } from "@/components/snapshot-provider";
-import { LoadingBox, ErrorBox, EmptyBox } from "./index";
+import { toast } from "sonner";
+import { ComparisonSkeleton } from "@/components/Skeletons";
+import { ErrorBox, EmptyBox } from "./index";
 
 export const Route = createFileRoute("/comparison")({
   component: ComparisonPage,
@@ -17,8 +20,14 @@ function ComparisonPage() {
     enabled: !!selectedId,
   });
 
+  useEffect(() => {
+    if (error) {
+      toast.error(`Failed to load comparison: ${(error as Error).message}`);
+    }
+  }, [error]);
+
   if (!selectedId) return <EmptyBox msg="No snapshot selected." />;
-  if (isLoading) return <LoadingBox />;
+  if (isLoading) return <ComparisonSkeleton />;
   if (error) return <ErrorBox msg={(error as Error).message} />;
   if (!data) return <EmptyBox msg="No comparison data." />;
 
@@ -79,7 +88,7 @@ function Column({
           {count}
         </span>
       </div>
-      <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
+      <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-border">
         {rows.length === 0 && (
           <p className="p-6 text-center text-sm text-muted-foreground">No rakes</p>
         )}

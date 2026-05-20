@@ -71,6 +71,7 @@ def get_daily_summary() -> dict:
     total_movements = 0
     # {rake_name: {rake_name, locn, duration_hours}}
     still_stabled_map = {}
+    idle_rakes_map = {}
 
     for ev in all_events:
         rake = ev.get("rake_name")
@@ -107,6 +108,16 @@ def get_daily_summary() -> dict:
             else:
                 still_stabled_map[rake]["duration_hours"] += duration
 
+            # calculate idle hours from event start_time to latest_report_time
+            idle_hours = (latest_report_time - start_time).total_seconds() / 3600
+            if idle_hours > 3:
+                if rake not in idle_rakes_map:
+                    idle_rakes_map[rake] = {
+                        "rake_name": rake,
+                        "locn": locn,
+                        "duration_hours": round(idle_hours, 4)
+                    }
+
     rake_summary = [
         {"rake_name": rake, "duration_hours": round(dur, 4)}
         for rake, dur in rake_duration_map.items()
@@ -120,6 +131,8 @@ def get_daily_summary() -> dict:
         "total_duration_hours": total_duration_hours,
         "total_movements": total_movements,
         "still_stabled_count": len(still_stabled_map),
+        "idle_count": len(idle_rakes_map),
         "rake_summary": rake_summary,
         "still_stabled_rakes": list(still_stabled_map.values()),
+        "idle_rakes": list(idle_rakes_map.values()),
     }
