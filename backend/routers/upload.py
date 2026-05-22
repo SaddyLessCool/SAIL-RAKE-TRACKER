@@ -47,10 +47,10 @@ def _safe_row(row: dict) -> dict:
 @router.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
     # Validate file count
-    if len(files) < 2 or len(files) > 3:
+    if len(files) < 1:
         raise HTTPException(
             status_code=400,
-            detail=f"Expected 2 or 3 .xlsx files. Received {len(files)}."
+            detail="Expected at least 1 .xlsx file."
         )
 
     # Validate file types
