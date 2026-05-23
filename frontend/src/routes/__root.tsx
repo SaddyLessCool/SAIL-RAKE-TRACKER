@@ -89,24 +89,39 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { useSnapshots } from "@/components/snapshot-provider";
+import { ServerWakeupScreen } from "@/components/ServerWakeupScreen";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <SnapshotProvider>
-          <div className="min-h-screen flex w-full bg-background">
-            <Sidebar />
-            <div className="flex-1 min-w-0 flex flex-col pt-4 transition-all duration-300">
-              <Topbar />
-              <main className="flex-1 px-4 pb-8 animate-fade-in-up">
-                <Outlet />
-              </main>
-            </div>
-          </div>
+          <RootLayout />
           <Toaster position="top-center" richColors />
         </SnapshotProvider>
       </ThemeProvider>
     </QueryClientProvider>
+  );
+}
+
+function RootLayout() {
+  const { isLoading, error } = useSnapshots();
+
+  if (isLoading) {
+    return <ServerWakeupScreen />;
+  }
+
+  return (
+    <div className="min-h-screen flex w-full bg-background animate-fade-in-up">
+      <Sidebar />
+      <div className="flex-1 min-w-0 flex flex-col pt-4 transition-all duration-300">
+        <Topbar />
+        <main className="flex-1 px-4 pb-8">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   );
 }
