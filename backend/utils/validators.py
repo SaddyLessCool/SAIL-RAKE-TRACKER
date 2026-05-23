@@ -5,7 +5,9 @@ REQUIRED_COLUMNS = {
     "DVSN FROM", "STTN FROM", "STTN TO", "CC RAKE", "RAKE NAME",
     "LOAD NAME", "LOAD TYPE", "TOTL UNTS", "L/E", "CMDT", "CNSR",
     "CNSG", "LDNG TIME", "TRANSIT TIME", "LOCO NUMB", "LOCO TYPE",
-    "RMNG KM", "EXPD ARVLTIME", "REPORT TIME"
+    "RMNG KM", "EXPD ARVLTIME"
+    # NOTE: REPORT TIME is intentionally excluded — its absence is valid.
+    # The file_parser resolves it via fallback (MAX(STTS TIME) or copy from sibling file).
 }
 
 
