@@ -41,17 +41,7 @@ export const Route = createFileRoute("/")({
 function UploadPage() {
   const { selectedId, isLoading: snapsLoading, error: snapsErr } = useSnapshots();
   
-  // Pending Filters State
-  const [pendingQ, setPendingQ] = useState("");
-  const [pendingFStts, setPendingFStts] = useState<string[]>(["All"]);
-  const [pendingFLocn, setPendingFLocn] = useState<string[]>(["All"]);
-  const [pendingFZone, setPendingFZone] = useState<string[]>(["All"]);
-  const [pendingFDvsn, setPendingFDvsn] = useState<string[]>(["All"]);
-  const [pendingFCmdt, setPendingFCmdt] = useState<string[]>(["All"]);
-  const [pendingFSttnFrom, setPendingFSttnFrom] = useState<string[]>(["All"]);
-  const [pendingFSttnTo, setPendingFSttnTo] = useState<string[]>(["All"]);
-
-  // Applied Filters State
+  // Filters State
   const [q, setQ] = useState("");
   const [fStts, setFStts] = useState<string[]>(["All"]);
   const [fLocn, setFLocn] = useState<string[]>(["All"]);
@@ -60,6 +50,7 @@ function UploadPage() {
   const [fCmdt, setFCmdt] = useState<string[]>(["All"]);
   const [fSttnFrom, setFSttnFrom] = useState<string[]>(["All"]);
   const [fSttnTo, setFSttnTo] = useState<string[]>(["All"]);
+  const [fPlant, setFPlant] = useState<string[]>(["All"]);
 
   // KPI modal state
   const [activeKpi, setActiveKpi] = useState<{ title: string; rakes: Rake[] } | null>(null);
@@ -141,35 +132,15 @@ function UploadPage() {
       stts: ["All", ...sttsRaw.sort()],
       locn: ["All", ...locnRaw.sort()],
       zone: sortCustom(zoneRaw, ["SE", "ER", "ECOR", "SCOR", "SEC", "SC"]),
-      dvsn: sortCustom(dvsnRaw, ["CKR", "ADRA", "RNC", "ASN", "KGP", "KUR", "WAT"]),
+      dvsn: sortCustom(dvsnRaw, ["CKP", "CKR", "ADRA", "RNC", "ASN", "KGP", "KUR", "WAT"]),
       cmdt: sortCustom(cmdtRaw, ["IMCL", "NMCL", "IORE", "IOST", "STC", "NSTC", "PBC", "NPBC", "NPC", "PHC", "NPHC", "NCOL", "LST", "LSST", "DMT", "DLMT", "DLST", "IS", "PIOR", "PIST", "SINT", "STON", "METL"]),
       sttnFrom: sortCustom(sttnFromRaw, ["BYFS", "PBSB", "HLSR", "ISCG", "FOS", "SOBK", "SSMK", "IISM", "DRZ", "KSDJ", "RSDG", "AAGH", "HDCB", "CBSP", "DDSP", "DDIP", "GPLC", "DPCB", "VSPV", "VZPB", "VGSD", "MGPV"]),
       sttnTo: sortCustom(sttnToRaw, ["BSPC", "MXA", "DSEY", "HSPG", "NHSB", "BSCS", "IISD", "BCME", "PMRN", "MOMG", "GFMK", "SSPL"]),
+      plant: ["All", "BSP", "DSP", "RSP", "BSL", "ISP", "Fines → Pellet"],
     };
   }, [rakes]);
 
-  const applyFilters = () => {
-    setQ(pendingQ);
-    setFStts([...pendingFStts]);
-    setFLocn([...pendingFLocn]);
-    setFZone([...pendingFZone]);
-    setFDvsn([...pendingFDvsn]);
-    setFCmdt([...pendingFCmdt]);
-    setFSttnFrom([...pendingFSttnFrom]);
-    setFSttnTo([...pendingFSttnTo]);
-    toast.success("Filters applied successfully!");
-  };
-
   const resetFilters = () => {
-    setPendingQ("");
-    setPendingFStts(["All"]);
-    setPendingFLocn(["All"]);
-    setPendingFZone(["All"]);
-    setPendingFDvsn(["All"]);
-    setPendingFCmdt(["All"]);
-    setPendingFSttnFrom(["All"]);
-    setPendingFSttnTo(["All"]);
-
     setQ("");
     setFStts(["All"]);
     setFLocn(["All"]);
@@ -178,6 +149,7 @@ function UploadPage() {
     setFCmdt(["All"]);
     setFSttnFrom(["All"]);
     setFSttnTo(["All"]);
+    setFPlant(["All"]);
     setQuick("All");
     toast.success("Filters cleared!");
   };
@@ -197,6 +169,20 @@ function UploadPage() {
       if (!fSttnFrom.includes("All") && !fSttnFrom.includes(r.sttn_from ?? "")) return false;
       if (!fSttnTo.includes("All") && !fSttnTo.includes(r.sttn_to ?? "")) return false;
 
+      // Plant filter logic
+      if (!fPlant.includes("All")) {
+        const PLANTS_CONFIG = [
+          { name: "BSP", sttnTo: ["BSPC", "MXA"] },
+          { name: "DSP", sttnTo: ["DSEY"] },
+          { name: "RSP", sttnTo: ["HSPG", "NHSB"] },
+          { name: "BSL", sttnTo: ["BSCS"] },
+          { name: "ISP", sttnTo: ["IISD", "BCME"] },
+          { name: "Fines → Pellet", sttnTo: ["PMRN","MOMG","GFMK","SSPL"] },
+        ];
+        const selectedPlantSttnTos = PLANTS_CONFIG.filter(p => fPlant.includes(p.name)).flatMap(p => p.sttnTo);
+        if (!selectedPlantSttnTos.includes(r.sttn_to ?? "")) return false;
+      }
+
       // 3. Quick Filters
       if (quick === "Only Stabled" && r.stts_code !== "ST") return false;
       if (quick === "Only Idle" && !r.is_idle_3hrs) return false;
@@ -209,7 +195,7 @@ function UploadPage() {
 
       return true;
     });
-  }, [rakes, q, fStts, fLocn, fZone, fDvsn, fCmdt, fSttnFrom, fSttnTo, quick]);
+  }, [rakes, q, fStts, fLocn, fZone, fDvsn, fCmdt, fSttnFrom, fSttnTo, fPlant, quick]);
 
   // 3-level sort: STTN TO priority → CMDT priority → LDNG TIME oldest-first
   const sortedFiltered = useMemo(() => {
@@ -386,27 +372,28 @@ function UploadPage() {
 
           <div className="md-card p-4 space-y-4 mb-6 border-b-0 rounded-b-none">
             {/* Top row: Search and Selects */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-3">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase text-muted-foreground/80 ml-1">Search</label>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <input
-                    value={pendingQ}
-                    onChange={(e) => setPendingQ(e.target.value)}
-                    placeholder="Enter rake name..."
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search..."
                     className="h-9 w-full rounded-lg border border-border bg-background/60 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
                   />
                 </div>
               </div>
 
-              <FilterSelect label="STTS" value={pendingFStts} onChange={setPendingFStts} options={options.stts} />
-              <FilterSelect label="Location" value={pendingFLocn} onChange={setPendingFLocn} options={options.locn} />
-              <FilterSelect label="Zone" value={pendingFZone} onChange={setPendingFZone} options={options.zone} />
-              <FilterSelect label="Division" value={pendingFDvsn} onChange={setPendingFDvsn} options={options.dvsn} />
-              <FilterSelect label="Commodity" value={pendingFCmdt} onChange={setPendingFCmdt} options={options.cmdt} />
-              <FilterSelect label="STTN FROM" value={pendingFSttnFrom} onChange={setPendingFSttnFrom} options={options.sttnFrom} />
-              <FilterSelect label="STTN TO" value={pendingFSttnTo} onChange={setPendingFSttnTo} options={options.sttnTo} />
+              <FilterSelect label="STTS" value={fStts} onChange={setFStts} options={options.stts} />
+              <FilterSelect label="Location" value={fLocn} onChange={setFLocn} options={options.locn} />
+              <FilterSelect label="Zone" value={fZone} onChange={setFZone} options={options.zone} />
+              <FilterSelect label="Division" value={fDvsn} onChange={setFDvsn} options={options.dvsn} />
+              <FilterSelect label="Commodity" value={fCmdt} onChange={setFCmdt} options={options.cmdt} />
+              <FilterSelect label="STTN FROM" value={fSttnFrom} onChange={setFSttnFrom} options={options.sttnFrom} />
+              <FilterSelect label="STTN TO" value={fSttnTo} onChange={setFSttnTo} options={options.sttnTo} />
+              <FilterSelect label="Plant" value={fPlant} onChange={setFPlant} options={options.plant} />
             </div>
 
             {/* Bottom row: Quick Filters & Apply/Reset Controls */}
@@ -445,13 +432,7 @@ function UploadPage() {
                   onClick={resetFilters}
                   className="h-9 rounded-lg border border-border px-4 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
                 >
-                  Reset
-                </button>
-                <button
-                  onClick={applyFilters}
-                  className="h-9 rounded-lg bg-primary px-5 text-xs font-semibold text-primary-foreground hover:opacity-95 shadow-md-soft transition-all cursor-pointer"
-                >
-                  Apply Filters
+                  Reset Filters
                 </button>
               </div>
             </div>
