@@ -114,9 +114,9 @@ function RootLayout() {
   }
 
   return (
-    <div className="min-h-screen flex w-full bg-background animate-fade-in-up">
+    <div className="min-h-screen flex w-full bg-background">
       <Sidebar />
-      <div className="flex-1 min-w-0 flex flex-col pt-4 transition-all duration-300">
+      <div className="flex-1 min-w-0 flex flex-col pt-4 transition-all duration-300 animate-fade-in-up">
         <Topbar />
         <main className="flex-1 px-4 pb-8">
           <Outlet />
