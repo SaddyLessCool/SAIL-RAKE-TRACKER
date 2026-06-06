@@ -1,0 +1,200 @@
+================================================================================
+                    SAIL RAKE TRACKER - SYSTEM USER GUIDE
+================================================================================
+
+1. INTRODUCTION & PURPOSE
+--------------------------------------------------------------------------------
+The SAIL Rake Tracker is a modern, high-performance industrial dashboard
+designed for tracking and analyzing railway rake stabling events across various
+SAIL plants. It processes raw Excel records, extracts logistical insights, 
+identifies delays, and displays performance trends via a clean React frontend 
+powered by a FastAPI backend.
+
+All time computations and statuses displayed are in Indian Standard Time (IST, 
+UTC+5:30).
+
+
+2. DATA REQUIREMENTS & UPLOADING SNAPSHOTS
+--------------------------------------------------------------------------------
+To ingest new data into the platform, users upload Excel (.xlsx) snapshots
+directly into the Upload Zone on the dashboard.
+
+* REQUIRED FILE FORMAT: Excel (.xlsx)
+* MULTI-FILE UPLOAD: Supported. You can upload 1, 2, or 3 files at once.
+* MANDATORY COLUMN HEADERS:
+  Each uploaded spreadsheet MUST contain the following 24 columns (exact case):
+  
+  1.  ZONE            2.  DVSN            3.  LOCN            4.  PLCT RESN
+  5.  STTS CODE       6.  STTS TIME       7.  DVSN FROM       8.  STTN FROM
+  9.  STTN TO         10. CC RAKE         11. RAKE NAME       12. LOAD NAME
+  13. LOAD TYPE       14. TOTL UNTS       15. L/E             16. CMDT
+  17. CNSR            18. CNSG            19. LDNG TIME       20. TRANSIT TIME
+  21. LOCO NUMB       22. LOCO TYPE       23. RMNG KM         24. EXPD ARVLTIME
+
+* REPORT TIME RESOLUTION RULES:
+  The system calculates stabling and idle times relative to a "REPORT TIME".
+  This value is resolved dynamically using these rules:
+  
+  - CASE 1: If multiple files contain a "REPORT TIME" column, all times must 
+    match (allowing a 1-minute drift). If they don't match, an error is thrown.
+  - CASE 2: If only one uploaded file has "REPORT TIME", that value is copied 
+    and applied across all other files in the same batch.
+  - CASE 3: If no uploaded file has a "REPORT TIME", the system automatically 
+    uses the maximum "STTS TIME" found in any row across all files.
+
+
+3. KEY METRICS & SYSTEM FLAGS EXPLAINED
+--------------------------------------------------------------------------------
+The analytics engine computes derived statuses and timings based on the data:
+
+* STABLED RAKES
+  - Flag: "is_stabled" is TRUE if [STTS CODE] is "ST".
+  - Metric: "Stabled (h)" calculates the elapsed hours between the resolved 
+    Report Time and the Status Time ([STTS TIME]).
+
+* IDLE > 3 HOURS
+  - Flag: "is_idle_3hrs" is TRUE if the difference between the resolved Report
+    Time and the Status Time ([STTS TIME]) is greater than or equal to 3 hours.
+
+* TRANSIT DELAYED
+  - Flag: "is_transit_delayed" is TRUE if the Expected Arrival Time
+    ([EXPD ARVLTIME]) is in the past compared to the Report Time, AND the 
+    Status Code ([STTS CODE]) is not "PL" (Placed).
+
+* LOADING DELAYED
+  - Flag: "is_loading_delayed" is TRUE if the Expected Arrival Time is in the 
+    past, AND the Placement Reason ([PLCT RESN]) is "LDNG".
+
+* UNLOADING DELAYED
+  - Flag: "is_unloading_delayed" is TRUE if the Expected Arrival Time is in 
+    the past, AND the Placement Reason ([PLCT RESN]) is "ULDG".
+
+* PLACED RAKES
+  - Flag: "is_placed" / Placed indicator is active if [STTS CODE] is "PL".
+
+
+4. USER INTERFACE & DASHBOARD FEATURES
+--------------------------------------------------------------------------------
+The React web application is designed with an intuitive, modern responsive UI
+including the following core sections:
+
+* LEFT SLIDE-OUT SIDEBAR
+  - Hover your mouse over the left-most edge (first 32px) of the screen to reveal
+    the navigation panel.
+  - Navigate between views: Upload, Comparison, Daily Summary, Range Summary.
+  - View Snapshot History: Displays a history list of uploaded report dates and
+    total rake counts. Click any previous snapshot to switch views instantly.
+
+* UPLOAD ZONE (HOME / UPLOAD PAGE)
+  - Drag and drop Excel spreadsheets into the dashed dropzone, or click the 
+    "Browse files" button.
+  - Uploading a new batch immediately processes the data and selects it as the 
+    active snapshot.
+
+* KPI CARDS & DRILL-DOWN MODALS
+  - Five detailed status cards show: Stabled Rakes, Transit Delayed, Loading 
+    Delayed, Unloading Delayed, and Placed Rakes.
+  - Click any card to open a modal displaying a detailed table of only the 
+    rakes matching that KPI.
+
+* PLANT SUMMARY CARDS
+  - Grouped automatically by destination station ([STTN TO]) to track logistics 
+    for specific plants:
+    
+    1. BSP (Bhilai Steel Plant)          -> Station Codes: BSPC, MXA
+    2. DSP (Durgapur Steel Plant)        -> Station Codes: DSEY
+    3. RSP (Rourkela Steel Plant)        -> Station Codes: HSPG, NHSB
+    4. BSL (Bokaro Steel Plant)          -> Station Codes: BSCS
+    5. ISP (IISCO Steel Plant)           -> Station Codes: IISD, BCME
+    6. Fines -> Pellet Logistics         -> Station Codes: PMRN, MOMG, GFMK, SSPL
+    
+  - Click any Plant Card to open a plant-specific modal. Drill down further to 
+    view counts and detailed lists of rakes grouped by Commodity:
+    - IMCL / NMCL (Imported / Non-Imported Coal)
+    - IORE / IOST (Iron Ore / Steel)
+    - LST / LSST (Limestone / Steel Grade)
+    - Others
+
+* PERFORMANCE CHARTS
+  - Displays a visual bar chart of Rake Counts across all 6 plants.
+  - Use the top buttons to slice/filter the chart instantly by Commodity groups 
+    (All, IMCL/NMCL, IORE/IOST, LST/LSST, Others).
+
+* SEARCH & FILTER PANEL
+  - Search Box: Dynamically filters rakes matching search query on [RAKE NAME]
+    or [LOCN] (Location).
+  - Multi-Select Dropdowns: Filter by STTS (Status Code), Location, Zone, 
+    Division, Commodity, STTN FROM, STTN TO, and Plant.
+  - Quick Filters: One-click buttons to filter by: All, Only Stabled, Only Idle, 
+    Only Moving, Placed, Transit Delayed, Unloading Delayed, Loading Delayed, 
+    or Any Delayed.
+  - Reset Filters button returns the table to its full state.
+
+* SYNCHRONIZED SCROLL DATA TABLE
+  - Displays comprehensive details for every rake in the active snapshot.
+  - Sorts automatically in a 3-level order:
+    1. Priority Station To code ([STTN TO])
+    2. Priority Commodity ([CMDT])
+    3. Oldest Loading Time first ([LDNG TIME])
+  - Features double horizontal scrollbars (at the top and bottom of the table) 
+    synchronized for quick, effortless navigation.
+  - Click "Export CSV" to download the current filtered view as a CSV spreadsheet.
+
+
+5. ADDITIONAL PAGES & NAVIGATION
+--------------------------------------------------------------------------------
+* COMPARISON VIEW (/comparison)
+  - Compares the active snapshot with the previous chronological snapshot in 
+    the database.
+  - Displays three distinct logs side-by-side:
+    1. Still Stabled: Rakes remaining stabled from the previous snapshot.
+    2. New Arrivals: Rakes that have entered a stabled state in this snapshot.
+    3. Moved Out: Rakes that were stabled before but are no longer stabled.
+
+* DAILY SUMMARY (/daily)
+  - Aggregates daily performance statistics: Total Stabled Rakes Today, 
+    Movements Today, Total Stabled Hours, and Total Idle Rakes.
+  - Lists current stabled rakes and idle alarms (>3 hrs) alongside their durations.
+
+* RANGE SUMMARY (/range)
+  - Aggregates historical metrics over presets: 7 Days, 15 Days, or 1 Month.
+  - Displays a Location Summary (expandable list of rakes handled at each 
+    location) and all Idle > 3 Hours alerts recorded in that time range.
+
+
+6. CONFIGURATION & SETTINGS
+--------------------------------------------------------------------------------
+* THEME TOGGLE
+  - Switch between Light Mode and Dark Mode by clicking the Sun/Moon icon in the
+    topbar.
+
+* CUSTOM BACKEND API CONFIGURATION
+  - Click the Gear icon in the topbar to configure the Backend API URL.
+  - By default, the application connects to a local server running at 
+    http://127.0.0.1:8000.
+  - If accessing the dashboard from a remote environment or a browser preview 
+    where local connections are blocked, expose your FastAPI backend (e.g., 
+    using ngrok or cloudflared) and paste the public URL in the Settings field.
+  - Click "Save & Reload Data" to store the preference in your local storage.
+
+
+7. TROUBLESHOOTING & COMMON ERRORS
+--------------------------------------------------------------------------------
+* ERROR: "Cannot reach backend at http://127.0.0.1:8000"
+  - Cause: The FastAPI backend service is not running or the browser is blocking 
+    the connection.
+  - Solution: Verify that the FastAPI server is running (`fastapi dev` or `uvicorn main:app`).
+    If accessing via HTTPS, you may need to expose the backend using ngrok and 
+    set the URL in Settings.
+
+* ERROR: "File 'filename.xlsx' is missing required columns"
+  - Cause: The uploaded Excel file is missing one or more required columns.
+  - Solution: Cross-reference the columns in the Excel file with the list of 24
+    mandatory columns in Section 2. Ensure they are named exactly as shown.
+
+* ERROR: "REPORT TIME mismatch between files"
+  - Cause: Two uploaded spreadsheets in the same batch contain different values 
+    in their "REPORT TIME" columns.
+  - Solution: Ensure all uploaded sheets are generated from the same reporting 
+    period and share matching Report Times.
+================================================================================

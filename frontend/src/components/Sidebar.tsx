@@ -36,7 +36,7 @@ export function Sidebar() {
       {/* Slide-out Sidebar */}
       <aside 
         className={cn(
-          "fixed top-4 h-[calc(100vh-2rem)] w-48 flex-col rounded-2xl bg-sidebar text-sidebar-foreground shadow-2xl overflow-hidden z-50 transition-transform duration-300 ease-in-out",
+          "fixed top-4 h-[calc(100vh-2rem)] w-48 flex flex-col rounded-2xl bg-sidebar text-sidebar-foreground shadow-2xl overflow-hidden z-50 transition-transform duration-300 ease-in-out",
           isHovered ? "translate-x-4" : "-translate-x-[110%]"
         )}
         onMouseEnter={() => setIsHovered(true)}
